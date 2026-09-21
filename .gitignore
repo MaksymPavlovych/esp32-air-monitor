@@ -1,0 +1,14 @@
+.pio
+compile_commands.json
+.cache/
+.vscode/.browse.c_cpptools.db*
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/ipch
+
+# Секрети: паролі й токени в Git потрапляти не повинні
+include/secrets.h
+
+# Python
+analysis/venv/
+__pycache__/
