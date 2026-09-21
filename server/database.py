@@ -2,7 +2,9 @@ import sqlite3
 from pathlib import Path
 
 DB_PATH = Path(__file__).parent / "data.db"
-FIELDS = ["temperature", "humidity", "pressure", "co2", "pm1_0", "pm2_5", "pm10"]
+FIELDS = ["temperature", "humidity", "pressure", "co2", "pm1_0", "pm2_5", "pm10", "aqi"]
+TEXT_FIELDS = ["level"]
+COLUMNS = FIELDS + TEXT_FIELDS
 
 
 def get_conn():
@@ -18,7 +20,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             ts TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
             temperature REAL, humidity REAL, pressure REAL, co2 REAL,
-            pm1_0 REAL, pm2_5 REAL, pm10 REAL
+            pm1_0 REAL, pm2_5 REAL, pm10 REAL, aqi REAL, level TEXT
         )
     """)
     conn.commit()
@@ -30,9 +32,12 @@ def insert(data):
     for f in FIELDS:
         v = data.get(f)
         values.append(float(v) if isinstance(v, (int, float)) else None)
+    for f in TEXT_FIELDS:
+        v = data.get(f)
+        values.append(v if isinstance(v, str) else None)
     conn = get_conn()
     conn.execute(
-        f"INSERT INTO measurements ({','.join(FIELDS)}) VALUES ({','.join('?' * len(FIELDS))})",
+        f"INSERT INTO measurements ({','.join(COLUMNS)}) VALUES ({','.join('?' * len(COLUMNS))})",
         values,
     )
     conn.commit()

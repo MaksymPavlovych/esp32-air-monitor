@@ -28,6 +28,13 @@
   .chart-box { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
   .chart-box h2 { margin:0 0 10px; font-size:15px; }
   .chart-wrap { position:relative; height:240px; }
+  .level { padding:14px 18px; border-radius:12px; margin-bottom:20px; font-weight:600;
+           background:var(--card); border:1px solid var(--line); }
+  .level { padding:14px 18px; border-radius:12px; margin-bottom:20px; font-weight:600;
+           background:var(--card); border:1px solid var(--line); }
+  .level.good { border-color:#2aa876; color:#2aa876; }
+  .level.moderate { border-color:#f2a900; color:#f2a900; }
+  .level.bad { border-color:#e4572e; color:#e4572e; }
 </style>
 </head>
 <body>
@@ -38,12 +45,13 @@
   </div>
   <a class="btn" href="/export.csv">Завантажити CSV</a>
 </header>
-
+<div class="level" id="level">Якість повітря: —</div>
 <div class="cards" id="cards"></div>
 <div class="charts" id="charts"></div>
 
 <script>
 const CARDS = [
+  ["aqi", "AQI (за PM2.5)", ""],
   ["temperature", "Температура", "°C"],
   ["humidity", "Вологість", "%"],
   ["pressure", "Тиск", "гПа"],
@@ -95,6 +103,10 @@ async function refresh() {
       fetch("/api/history?limit=200").then(r => r.json()),
     ]);
     CARDS.forEach(([key]) => {
+      const names = { good: "Добре", moderate: "Помірно", bad: "Погано", unknown: "Немає даних" };
+      const lv = document.getElementById("level");
+      lv.className = "level " + (latest.level || "");
+      lv.textContent = "Якість повітря: " + (names[latest.level] || "—");
       document.getElementById("v-" + key).textContent = fmt(latest[key]);
     });
     document.getElementById("status").textContent =

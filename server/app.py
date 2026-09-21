@@ -3,7 +3,7 @@ import io
 
 from flask import Flask, Response, jsonify, render_template, request
 
-from database import FIELDS, all_rows, history, init_db, insert, latest
+from database import COLUMNS, all_rows, history, init_db, insert, latest
 
 app = Flask(__name__)
 init_db()
@@ -33,9 +33,9 @@ def api_history():
 def export_csv():
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["ts"] + FIELDS)
+    writer.writerow(["ts"] + COLUMNS)
     for r in all_rows():
-        writer.writerow([r["ts"]] + [r[f] for f in FIELDS])
+        writer.writerow([r["ts"]] + [r[f] for f in COLUMNS])
     return Response(
         buf.getvalue(),
         mimetype="text/csv",
