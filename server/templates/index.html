@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP32 Air Monitor</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root { --bg:#f4f6f8; --card:#fff; --text:#1c2530; --muted:#6b7785; --line:#dde3ea; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0f1419; --card:#1a222c; --text:#e6ebf0; --muted:#8a97a5; --line:#2a3542; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:20px; background:var(--bg); color:var(--text);
+         font-family:system-ui, Segoe UI, sans-serif; }
+  header { display:flex; justify-content:space-between; align-items:center;
+           flex-wrap:wrap; gap:10px; margin-bottom:20px; }
+  h1 { margin:0; font-size:22px; }
+  .muted { color:var(--muted); font-size:13px; }
+  a.btn { background:var(--card); color:var(--text); border:1px solid var(--line);
+          padding:8px 14px; border-radius:8px; text-decoration:none; font-size:14px; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .card .label { color:var(--muted); font-size:13px; }
+  .card .value { font-size:28px; font-weight:600; margin-top:4px; }
+  .card .unit { font-size:14px; color:var(--muted); font-weight:400; }
+  .charts { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:12px; }
+  .chart-box { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .chart-box h2 { margin:0 0 10px; font-size:15px; }
+  .chart-wrap { position:relative; height:240px; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>ESP32 Air Monitor</h1>
+    <div class="muted" id="status">Очікування даних…</div>
+  </div>
+  <a class="btn" href="/export.csv">Завантажити CSV</a>
+</header>
+
+<div class="cards" id="cards"></div>
+<div class="charts" id="charts"></div>
+
+<script>
+const CARDS = [
+  ["temperature", "Температура", "°C"],
+  ["humidity", "Вологість", "%"],
+  ["pressure", "Тиск", "гПа"],
+  ["co2", "CO₂ (оцінка)", "ppm"],
+  ["pm2_5", "PM2.5", "мкг/м³"],
+  ["pm10", "PM10", "мкг/м³"],
+];
+
+const CHARTS = [
+  { title: "Температура і вологість", series: [
+      ["temperature", "Температура, °C", "#e4572e"],
+      ["humidity", "Вологість, %", "#2e86e4"] ] },
+  { title: "Атмосферний тиск, гПа", series: [["pressure", "Тиск", "#8e5bd4"]] },
+  { title: "Пил, мкг/м³", series: [
+      ["pm1_0", "PM1.0", "#f2a900"],
+      ["pm2_5", "PM2.5", "#e4572e"],
+      ["pm10", "PM10", "#7a4b2a"] ] },
+  { title: "CO₂ (оцінка), ppm", series: [["co2", "CO₂", "#2aa876"]] },
+];
+
+const cardsEl = document.getElementById("cards");
+CARDS.forEach(([key, label, unit]) => {
+  cardsEl.insertAdjacentHTML("beforeend",
+    `<div class="card"><div class="label">${label}</div>
+     <div class="value"><span id="v-${key}">—</span> <span class="unit">${unit}</span></div></div>`);
+});
+
+const chartsEl = document.getElementById("charts");
+const charts = CHARTS.map((def, i) => {
+  chartsEl.insertAdjacentHTML("beforeend",
+    `<div class="chart-box"><h2>${def.title}</h2>
+     <div class="chart-wrap"><canvas id="c${i}"></canvas></div></div>`);
+  return new Chart(document.getElementById("c" + i), {
+    type: "line",
+    data: { labels: [], datasets: def.series.map(([key, name, color]) => ({
+      label: name, data: [], borderColor: color, backgroundColor: color,
+      borderWidth: 2, pointRadius: 0, tension: 0.25, spanGaps: true })) },
+    options: { animation: false, responsive: true, maintainAspectRatio: false,
+      scales: { x: { ticks: { maxTicksLimit: 6 } } } },
+  });
+});
+
+function fmt(v) { return v === null || v === undefined ? "—" : v; }
+
+async function refresh() {
+  try {
+    const [latest, hist] = await Promise.all([
+      fetch("/api/latest").then(r => r.json()),
+      fetch("/api/history?limit=200").then(r => r.json()),
+    ]);
+    CARDS.forEach(([key]) => {
+      document.getElementById("v-" + key).textContent = fmt(latest[key]);
+    });
+    document.getElementById("status").textContent =
+      latest.ts ? "Останнє оновлення: " + latest.ts : "Даних ще немає";
+
+    const labels = hist.map(r => r.ts.slice(11));
+    charts.forEach((chart, i) => {
+      chart.data.labels = labels;
+      CHARTS[i].series.forEach(([key], j) => {
+        chart.data.datasets[j].data = hist.map(r => r[key]);
+      });
+      chart.update();
+    });
+  } catch (e) {
+    document.getElementById("status").textContent = "Сервер недоступний";
+  }
+}
+
+refresh();
+setInterval(refresh, 5000);
+</script>
+</body>
+</html>

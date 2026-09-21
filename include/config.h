@@ -29,7 +29,6 @@ constexpr float DIVIDER_R2 = 20000.0f;      // Ом
 
 // ============ Інтервали (мс) ============
 constexpr unsigned long SENSOR_INTERVAL_MS = 5000;      // опитування датчиків
-constexpr unsigned long ALERT_COOLDOWN_MS  = 600000;    // не частіше 1 тривоги за 10 хв
 
 // ============ Пороги оцінки якості повітря ============
 constexpr float PM25_MODERATE = 35.0f;      // мкг/м3
