@@ -4,7 +4,6 @@
 
 struct Breakpoint { float cLow, cHigh; int iLow, iHigh; };
 
-// Таблиця US EPA для PM2.5 (мкг/м3 -> індекс AQI)
 static const Breakpoint PM25_TABLE[] = {
     {0.0f,   12.0f,    0,  50},
     {12.1f,  35.4f,   51, 100},
@@ -15,13 +14,13 @@ static const Breakpoint PM25_TABLE[] = {
     {350.5f, 500.4f, 401, 500},
 };
 
-int calcAqiPm25(float pm25) {
-    if (isnan(pm25) || pm25 < 0) return -1;
-    pm25 = floorf(pm25 * 10.0f) / 10.0f;   // за методикою EPA: усічення до 0.1
+int calcAqiPm25(float dust) {
+    if (isnan(dust) || dust < 0) return -1;
+    dust = floorf(dust * 10.0f) / 10.0f;
     for (const auto& bp : PM25_TABLE) {
-        if (pm25 <= bp.cHigh) {
+        if (dust <= bp.cHigh) {
             float aqi = (float)(bp.iHigh - bp.iLow) / (bp.cHigh - bp.cLow)
-                        * (pm25 - bp.cLow) + bp.iLow;
+                        * (dust - bp.cLow) + bp.iLow;
             return (int)roundf(aqi);
         }
     }
@@ -32,12 +31,12 @@ static void raise(int& level, int v) { if (v > level) level = v; }
 
 AirLevel evaluate(const SensorData& d) {
     bool any = false;
-    int level = 0;   // 0 добре, 1 помірно, 2 погано
+    int level = 0;
 
-    if (!isnan(d.pm2_5)) {
+    if (!isnan(d.dust)) {
         any = true;
-        if (d.pm2_5 >= PM25_BAD) raise(level, 2);
-        else if (d.pm2_5 >= PM25_MODERATE) raise(level, 1);
+        if (d.dust >= PM25_BAD) raise(level, 2);
+        else if (d.dust >= PM25_MODERATE) raise(level, 1);
     }
     if (!isnan(d.co2)) {
         any = true;

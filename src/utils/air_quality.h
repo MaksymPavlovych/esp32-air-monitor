@@ -3,6 +3,6 @@
 
 enum class AirLevel { GOOD, MODERATE, BAD, UNKNOWN };
 
-int calcAqiPm25(float pm25);              // AQI за PM2.5, -1 якщо даних немає
-AirLevel evaluate(const SensorData& d);   // підсумок за всіма показниками
+int calcAqiPm25(float dust);
+AirLevel evaluate(const SensorData& d);
 const char* levelName(AirLevel level);
